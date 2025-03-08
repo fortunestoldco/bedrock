@@ -148,3 +148,58 @@ class IAMManager:
             except ClientError as e:
                 logger.error(f"Error creating IAM role: {str(e)}")
                 return None
+
+    def create_role(self, role_name: str, trust_policy: Dict[str, Any]) -> Optional[str]:
+        """Create an IAM role with the specified trust policy. Returns the role ARN."""
+        region = self.config.aws_region
+        profile = self.config.aws_profile
+
+        session = boto3.Session(region_name=region, profile_name=profile)
+        iam = session.client('iam')
+
+        try:
+            response = iam.create_role(
+                RoleName=role_name,
+                AssumeRolePolicyDocument=json.dumps(trust_policy)
+            )
+            return response['Role']['Arn']
+        except ClientError as e:
+            logger.error(f"Error creating IAM role: {str(e)}")
+            return None
+
+    def attach_policy(self, role_name: str, policy_name: str, policy_document: Dict[str, Any]) -> bool:
+        """Attach a policy to an IAM role. Returns True if successful."""
+        region = self.config.aws_region
+        profile = self.config.aws_profile
+
+        session = boto3.Session(region_name=region, profile_name=profile)
+        iam = session.client('iam')
+
+        try:
+            iam.put_role_policy(
+                RoleName=role_name,
+                PolicyName=policy_name,
+                PolicyDocument=json.dumps(policy_document)
+            )
+            return True
+        except ClientError as e:
+            logger.error(f"Error attaching policy to IAM role: {str(e)}")
+            return False
+
+    def detach_policy(self, role_name: str, policy_name: str) -> bool:
+        """Detach a policy from an IAM role. Returns True if successful."""
+        region = self.config.aws_region
+        profile = self.config.aws_profile
+
+        session = boto3.Session(region_name=region, profile_name=profile)
+        iam = session.client('iam')
+
+        try:
+            iam.delete_role_policy(
+                RoleName=role_name,
+                PolicyName=policy_name
+            )
+            return True
+        except ClientError as e:
+            logger.error(f"Error detaching policy from IAM role: {str(e)}")
+            return False
