@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # AWS Bedrock Flow Hierarchical Multi-Agent Deployment Script
-# This script helps deploy, modify, or delete a complex Bedrock Flow for manuscript processing
+# This script helps deploy, modify, or delete a complex Bedrock Flow for Storybook processing
 # Requirements: AWS CLI v2.24 or higher, jq, proper AWS permissions
 
 set -e
@@ -15,10 +15,10 @@ NC='\033[0m' # No Color
 
 # Global variables
 REGION="us-east-1" # Default region - modify if needed
-STACK_NAME="ManuscriptProcessingFlow"
+STACK_NAME="storybook"
 MODEL_ID="anthropic.claude-3-sonnet-20240229-v1:0" # Default model
-FLOW_BUCKET_NAME="manuscript-flow-resources-$(date +%s)"
-ROLE_NAME="BedrockFlowManuscriptRole"
+FLOW_BUCKET_NAME="storybook-flow"
+ROLE_NAME="storybook-flow"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 # Agent IDs - will be populated during creation
@@ -112,12 +112,12 @@ EOF
 
     # Create and attach policy
     aws iam create-policy \
-        --policy-name BedrockFlowManuscriptPolicy \
+        --policy-name StorybookPolicy \
         --policy-document file://bedrock-policy.json
 
     aws iam attach-role-policy \
         --role-name $ROLE_NAME \
-        --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy
+        --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/StorybookPolicy
     
     # Wait for role to propagate
     echo -e "${YELLOW}Waiting 10 seconds for role to propagate...${NC}"
@@ -153,22 +153,22 @@ upload_prompts() {
     cat > prompts/executive_director.md << EOF
 # Executive Director Agent Prompt
 
-You are the Executive Director of a manuscript processing system. Your role is to:
+You are the Executive Director of a Storybook processing system. Your role is to:
 - Orchestrate the entire workflow and coordinate all agents
-- Maintain a global vision of manuscript goals and quality
+- Maintain a global vision of Storybook goals and quality
 - Make final decisions on major revisions
 - Interface between the system and the human author
 
 ## INSTRUCTIONS:
-1. Assess the manuscript's current state and identify the highest priority areas for improvement
+1. Assess the Storybook's current state and identify the highest priority areas for improvement
 2. Coordinate the work of all specialized agents in the system
-3. Track overall progress and guide the manuscript through the revision process
+3. Track overall progress and guide the Storybook through the revision process
 4. Make executive decisions when agents have conflicting recommendations
 5. Provide clear summaries to the human author of changes made and reasoning
-6. Always maintain the original creative vision and voice of the manuscript
+6. Always maintain the original creative vision and voice of the Storybook
 
-## MANUSCRIPT ANALYSIS:
-When analyzing a manuscript, consider:
+## Storybook ANALYSIS:
+When analyzing a Storybook, consider:
 - Overall narrative structure and flow
 - Character development and arcs
 - Pacing and engagement
@@ -178,34 +178,34 @@ When analyzing a manuscript, consider:
 
 ## OUTPUTS:
 Provide concise, actionable guidance that includes:
-1. Executive summary of manuscript status
+1. Executive summary of Storybook status
 2. Priority areas requiring attention
 3. Specific instructions for specialized agents
 4. Timeline for implementation
 5. Clear rationale for decisions made
 
-Remember that you hold the global vision for the manuscript. Focus on coordinating the specialized expertise of other agents while ensuring the final product maintains creative integrity and meets market standards.
+Remember that you hold the global vision for the Storybook. Focus on coordinating the specialized expertise of other agents while ensuring the final product maintains creative integrity and meets market standards.
 EOF
 
     cat > prompts/creative_director.md << EOF
 # Creative Director Agent Prompt
 
-You are the Creative Director of a manuscript processing system. Your role is to:
-- Define and protect core creative elements of the manuscript
+You are the Creative Director of a Storybook processing system. Your role is to:
+- Define and protect core creative elements of the Storybook
 - Balance commercial considerations with artistic integrity
 - Guide stylistic decisions throughout the revision process
-- Ensure the manuscript maintains its distinctive voice
+- Ensure the Storybook maintains its distinctive voice
 
 ## INSTRUCTIONS:
-1. Identify the core creative elements that make this manuscript unique
+1. Identify the core creative elements that make this Storybook unique
 2. Establish stylistic guidelines for all other agents to follow
 3. Review proposed changes for creative consistency
 4. Push back on suggestions that compromise artistic integrity
-5. Enhance distinctive elements that set the manuscript apart
+5. Enhance distinctive elements that set the Storybook apart
 6. Ensure the author's original voice remains intact
 
 ## CREATIVE ASSESSMENT:
-When reviewing a manuscript, analyze:
+When reviewing a Storybook, analyze:
 - Distinctive voice and tone
 - Unique stylistic elements
 - Core themes and motifs
@@ -215,13 +215,13 @@ When reviewing a manuscript, analyze:
 
 ## OUTPUTS:
 Provide clear creative guidance that includes:
-1. Creative vision statement for the manuscript
+1. Creative vision statement for the Storybook
 2. Stylistic guidelines for maintaining voice consistency
 3. Recommendations for enhancing distinctive elements
 4. Identification of areas where commercial needs may conflict with artistic vision
 5. Solutions that balance marketability with creative integrity
 
-Remember that you are the guardian of the manuscript's artistic soul. Your decisions should protect what makes this work special while allowing necessary improvements to reach its full potential.
+Remember that you are the guardian of the Storybook's artistic soul. Your decisions should protect what makes this work special while allowing necessary improvements to reach its full potential.
 EOF
 
     # Create prompts for remaining agents (abbreviated for length)
@@ -230,13 +230,13 @@ EOF
         cat > prompts/${agent}.md << EOF
 # ${agent^} Agent Prompt
 
-You are the ${agent^} in a manuscript processing system. Your specialized role focuses on specific aspects of manuscript enhancement.
+You are the ${agent^} in a Storybook processing system. Your specialized role focuses on specific aspects of Storybook enhancement.
 
 ## INSTRUCTIONS:
-1. Review the manuscript section with focus on your specialty
+1. Review the Storybook section with focus on your specialty
 2. Identify issues and opportunities for improvement
 3. Provide specific, actionable recommendations
-4. Maintain consistency with the manuscript's voice and vision
+4. Maintain consistency with the Storybook's voice and vision
 5. Collaborate with other agents as needed
 
 ## ANALYSIS FOCUS:
@@ -249,7 +249,7 @@ Provide specialized recommendations including:
 3. Implementation guidance
 4. Reasoning for recommendations
 
-Remember to stay focused on your specific area of expertise while maintaining awareness of the manuscript's overall goals.
+Remember to stay focused on your specific area of expertise while maintaining awareness of the Storybook's overall goals.
 EOF
     done
 
@@ -257,13 +257,13 @@ EOF
     cat > prompts/text_splitter.md << EOF
 # Text Splitting Utility
 
-You are a utility designed to split large manuscript texts into manageable chunks while preserving context.
+You are a utility designed to split large Storybook texts into manageable chunks while preserving context.
 
 ## INSTRUCTIONS:
 1. Split text at natural boundaries (chapters, scenes) whenever possible
 2. Ensure each chunk contains enough context for processing
 3. Maintain a small overlap between chunks for continuity
-4. Track metadata including position in overall manuscript
+4. Track metadata including position in overall Storybook
 5. Generate a brief summary of each chunk for reference
 
 ## PROCESS:
@@ -343,13 +343,13 @@ create_agent() {
 
 # Create all agents in the system
 create_agents() {
-    echo -e "${BLUE}Creating all agents for manuscript processing workflow...${NC}"
+    echo -e "${BLUE}Creating all agents for Storybook processing workflow...${NC}"
     
     # Create Executive Tier Agents
     create_agent "ExecutiveDirector" "System orchestrator and final decision-maker" "prompts/executive_director.md"
-    create_agent "CreativeDirector" "Guardian of the manuscript's artistic vision" "prompts/creative_director.md"
+    create_agent "CreativeDirector" "Guardian of the Storybook's artistic vision" "prompts/creative_director.md"
     create_agent "HumanFeedbackManager" "Interpreter of author intentions and external feedback" "prompts/human_feedback_manager.md"
-    create_agent "QualityAssessmentDirector" "Objective evaluator of manuscript progression" "prompts/quality_assessment_director.md"
+    create_agent "QualityAssessmentDirector" "Objective evaluator of Storybook progression" "prompts/quality_assessment_director.md"
     create_agent "ProjectTimelineManager" "Process efficiency expert" "prompts/project_timeline_manager.md"
     create_agent "MarketAlignmentDirector" "Commercial viability specialist" "prompts/market_alignment_director.md"
     
@@ -390,7 +390,7 @@ create_agents() {
     create_agent "FormattingStandardsExpert" "Industry standards compliance specialist" "prompts/formatting_standards_expert.md"
     
     # Create utility agent for text splitting
-    create_agent "TextSplitter" "Utility for splitting large manuscripts" "prompts/text_splitter.md"
+    create_agent "TextSplitter" "Utility for splitting large Storybooks" "prompts/text_splitter.md"
     
     echo -e "${GREEN}All agents created successfully.${NC}"
     
@@ -401,13 +401,13 @@ create_agents() {
 
 # Create the Bedrock Flow
 create_flow() {
-    echo -e "${BLUE}Creating Bedrock Flow for manuscript processing...${NC}"
+    echo -e "${BLUE}Creating Bedrock Flow for Storybook processing...${NC}"
     
     # Create flow definition file
     cat > flow_definition.json << EOF
 {
-  "name": "ManuscriptProcessingFlow",
-  "description": "A hierarchical multi-agent workflow for processing and enhancing manuscripts",
+  "name": "storybook-process",
+  "description": "A hierarchical multi-agent workflow for processing and enhancing Storybooks",
   "execution": {
     "timeoutMinutes": 240
   },
@@ -420,21 +420,21 @@ create_flow() {
         "inputs": {
           "flowInputs": {
             "title": "\${title}",
-            "manuscript": "\${manuscript}"
+            "Storybook": "\${Storybook}"
           }
         },
         "outputs": {
           "title": "\${title}",
-          "manuscript": "\${manuscript}"
+          "Storybook": "\${Storybook}"
         }
       },
       {
-        "name": "TextSplitterNode",
+        "name": "textsplitter-node",
         "type": "InvokeAgent",
         "source": "InputNode",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["TextSplitter"]}:Production",
-          "inputText": "I need to split this manuscript for processing. Here are the details:\nTitle: \${title}\n\nManuscript:\n\${manuscript}"
+          "inputText": "I need to split this Storybook for processing. Here are the details:\nTitle: \${title}\n\nStorybook:\n\${Storybook}"
         },
         "outputs": {
           "chunks": "\${agentResponse}"
@@ -443,10 +443,10 @@ create_flow() {
       {
         "name": "ExecutiveAssessment",
         "type": "InvokeAgent",
-        "source": "TextSplitterNode",
+        "source": "textsplitter-node",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["ExecutiveDirector"]}:Production",
-          "inputText": "Please review this manuscript and provide an initial assessment:\nTitle: \${title}\n\nManuscript chunks:\n\${chunks}"
+          "inputText": "Please review this Storybook and provide an initial assessment:\nTitle: \${title}\n\nStorybook chunks:\n\${chunks}"
         },
         "outputs": {
           "executiveAssessment": "\${agentResponse}"
@@ -458,7 +458,7 @@ create_flow() {
         "source": "ExecutiveAssessment",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["CreativeDirector"]}:Production",
-          "inputText": "Based on the executive assessment, please establish the creative vision for this manuscript:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nManuscript chunks: \${chunks}"
+          "inputText": "Based on the executive assessment, please establish the creative vision for this Storybook:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nStorybook chunks: \${chunks}"
         },
         "outputs": {
           "creativeVision": "\${agentResponse}"
@@ -470,92 +470,92 @@ create_flow() {
         "source": "CreativeVision",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["MarketAlignmentDirector"]}:Production",
-          "inputText": "Please analyze the market positioning for this manuscript:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nCreative Vision: \${creativeVision}"
+          "inputText": "Please analyze the market positioning for this Storybook:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nCreative Vision: \${creativeVision}"
         },
         "outputs": {
           "marketAnalysis": "\${agentResponse}"
         }
       },
       {
-        "name": "StructuralAssessment",
+        "name": "structural-assessment",
         "type": "InvokeAgent",
         "source": "MarketAnalysis",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["StructureArchitect"]}:Production",
-          "inputText": "Please analyze the structural elements of this manuscript:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}\n\nManuscript chunks: \${chunks}"
+          "inputText": "Please analyze the structural elements of this Storybook:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}\n\nStorybook chunks: \${chunks}"
         },
         "outputs": {
-          "structuralAssessment": "\${agentResponse}"
+          "structural-assessment": "\${agentResponse}"
         }
       },
       {
-        "name": "CharacterAssessment",
+        "name": "character-assessment",
         "type": "InvokeAgent",
-        "source": "StructuralAssessment",
+        "source": "structural-assessment",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["CharacterPsychologySpecialist"]}:Production",
-          "inputText": "Please analyze the character elements of this manuscript:\n\nTitle: \${title}\n\nStructural Assessment: \${structuralAssessment}\n\nCreative Vision: \${creativeVision}\n\nManuscript chunks: \${chunks}"
+          "inputText": "Please analyze the character elements of this Storybook:\n\nTitle: \${title}\n\nStructural Assessment: \${structural-assessment}\n\nCreative Vision: \${creativeVision}\n\nStorybook chunks: \${chunks}"
         },
         "outputs": {
-          "characterAssessment": "\${agentResponse}"
+          "character-assessment": "\${agentResponse}"
         }
       },
       {
-        "name": "ContentRefinementPlan",
+        "name": "content-refinement",
         "type": "InvokeAgent",
-        "source": "CharacterAssessment",
+        "source": "character-assessment",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["ContentDevelopmentDirector"]}:Production",
-          "inputText": "Please develop a content refinement plan for this manuscript:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nStructural Assessment: \${structuralAssessment}\n\nCharacter Assessment: \${characterAssessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}"
+          "inputText": "Please develop a content refinement plan for this Storybook:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nStructural Assessment: \${structural-assessment}\n\nCharacter Assessment: \${character-assessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}"
         },
         "outputs": {
           "contentPlan": "\${agentResponse}"
         }
       },
       {
-        "name": "EditorialDirection",
+        "name": "editorial-direction",
         "type": "InvokeAgent",
-        "source": "ContentRefinementPlan",
+        "source": "content-refinement",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["EditorialDirector"]}:Production",
-          "inputText": "Please establish editorial direction for this manuscript:\n\nTitle: \${title}\n\nContent Plan: \${contentPlan}\n\nCreative Vision: \${creativeVision}\n\nStructural Assessment: \${structuralAssessment}\n\nCharacter Assessment: \${characterAssessment}"
+          "inputText": "Please establish editorial direction for this Storybook:\n\nTitle: \${title}\n\nContent Plan: \${contentPlan}\n\nCreative Vision: \${creativeVision}\n\nStructural Assessment: \${structural-assessment}\n\nCharacter Assessment: \${character-assessment}"
         },
         "outputs": {
-          "editorialDirection": "\${agentResponse}"
+          "editorial-direction": "\${agentResponse}"
         }
       },
       {
-        "name": "ProseRefinement",
+        "name": "prose-refinement",
         "type": "InvokeAgent",
-        "source": "EditorialDirection",
+        "source": "editorial-direction",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["ProseEnhancementSpecialist"]}:Production",
-          "inputText": "Please enhance the prose of this manuscript based on the editorial direction:\n\nTitle: \${title}\n\nEditorial Direction: \${editorialDirection}\n\nCreative Vision: \${creativeVision}\n\nManuscript chunks: \${chunks}"
+          "inputText": "Please enhance the prose of this Storybook based on the editorial direction:\n\nTitle: \${title}\n\nEditorial Direction: \${editorial-direction}\n\nCreative Vision: \${creativeVision}\n\nStorybook chunks: \${chunks}"
         },
         "outputs": {
           "enhancedProse": "\${agentResponse}"
         }
       },
       {
-        "name": "FinalRevision",
+        "name": "final-revision",
         "type": "InvokeAgent",
-        "source": "ProseRefinement",
+        "source": "prose-refinement",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["ExecutiveDirector"]}:Production",
-          "inputText": "Please review and finalize the manuscript with all enhancements:\n\nTitle: \${title}\n\nEnhanced Prose: \${enhancedProse}\n\nEditorial Direction: \${editorialDirection}\n\nContent Plan: \${contentPlan}\n\nStructural Assessment: \${structuralAssessment}\n\nCharacter Assessment: \${characterAssessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}"
+          "inputText": "Please review and finalize the Storybook with all enhancements:\n\nTitle: \${title}\n\nEnhanced Prose: \${enhancedProse}\n\nEditorial Direction: \${editorial-direction}\n\nContent Plan: \${contentPlan}\n\nStructural Assessment: \${structural-assessment}\n\nCharacter Assessment: \${character-assessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}"
         },
         "outputs": {
-          "finalManuscript": "\${agentResponse}"
+          "finalStorybook": "\${agentResponse}"
         }
       },
       {
         "name": "OutputNode",
         "type": "Output",
-        "source": "FinalRevision",
+        "source": "final-revision",
         "inputs": {
           "flowOutputs": {
             "originalTitle": "\${title}",
-            "polishedManuscript": "\${finalManuscript}",
+            "polishedStorybook": "\${finalStorybook}",
             "executiveSummary": "\${executiveAssessment}",
             "creativeVision": "\${creativeVision}",
             "marketAnalysis": "\${marketAnalysis}"
@@ -570,7 +570,7 @@ EOF
 
     # Create the flow
     FLOW_RESPONSE=$(aws bedrock create-flow \
-        --name "ManuscriptProcessingFlow" \
+        --name "storybook-process" \
         --definition file://flow_definition.json \
         --execution-role-arn "arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}" \
         --region $REGION)
@@ -611,7 +611,7 @@ create_resources() {
     create_flow
     
     echo -e "${GREEN}All resources created successfully.${NC}"
-    echo -e "${BLUE}Your manuscript processing flow is ready to use.${NC}"
+    echo -e "${BLUE}Your Storybook processing flow is ready to use.${NC}"
     echo -e "${BLUE}Flow ID: $FLOW_ID${NC}"
     echo -e "${BLUE}Flow Alias: Production (ID: $FLOW_ALIAS_ID)${NC}"
     echo -e "${BLUE}S3 Bucket: $FLOW_BUCKET_NAME${NC}"
@@ -652,7 +652,7 @@ modify_resources() {
 
 # Function to delete all resources
 delete_resources() {
-    echo -e "${RED}WARNING: This will delete all resources created for the manuscript processing flow.${NC}"
+    echo -e "${RED}WARNING: This will delete all resources created for the Storybook processing flow.${NC}"
     read -p "Are you sure you want to proceed? (y/n): " confirm
     
     if [[ $confirm != "y" && $confirm != "Y" ]]; then
@@ -719,10 +719,10 @@ delete_resources() {
     if [ ! -z "$ROLE_NAME" ]; then
         aws iam detach-role-policy \
             --role-name $ROLE_NAME \
-            --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy || true
+            --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/storybook-policy || true
         
         aws iam delete-policy \
-            --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy || true
+            --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/storybook-policy || true
         
         aws iam delete-role \
             --role-name $ROLE_NAME || true
@@ -766,9 +766,9 @@ show_info() {
     echo -e "${GREEN}S3 Bucket: $FLOW_BUCKET_NAME${NC}"
 }
 
-# Function to test the flow with a sample manuscript
+# Function to test the flow with a sample Storybook
 test_flow() {
-    echo -e "${BLUE}Testing the manuscript processing flow...${NC}"
+    echo -e "${BLUE}Testing the Storybook processing flow...${NC}"
     
     if [ ! -f flow_info.txt ]; then
         echo -e "${RED}Flow information not found. Please deploy the flow first.${NC}"
@@ -777,21 +777,21 @@ test_flow() {
     
     source flow_info.txt
     
-    # Create a small test manuscript
-    cat > test_manuscript.json << EOF
+    # Create a small test Storybook
+    cat > test_Storybook.json << EOF
 {
-  "title": "The Test Manuscript",
-  "manuscript": "Chapter 1: The Beginning\n\nIt was a dark and stormy night. The protagonist couldn't sleep, tossing and turning as the rain beat against the window. Tomorrow would bring new challenges, but for now, the quiet of the night was both comforting and unsettling.\n\nChapter 2: The Discovery\n\nThe morning brought unexpected news. What seemed like an ordinary day would soon reveal secrets that had been buried for decades."
+  "title": "The Test Storybook",
+  "Storybook": "Chapter 1: The Beginning\n\nIt was a dark and stormy night. The protagonist couldn't sleep, tossing and turning as the rain beat against the window. Tomorrow would bring new challenges, but for now, the quiet of the night was both comforting and unsettling.\n\nChapter 2: The Discovery\n\nThe morning brought unexpected news. What seemed like an ordinary day would soon reveal secrets that had been buried for decades."
 }
 EOF
 
-    echo -e "${BLUE}Invoking flow with test manuscript...${NC}"
+    echo -e "${BLUE}Invoking flow with test Storybook...${NC}"
     
     # Invoke the flow
     INVOKE_RESPONSE=$(aws bedrock invoke-flow \
         --flow-id $FLOW_ID \
         --flow-alias "Production" \
-        --inputs file://test_manuscript.json \
+        --inputs file://test_Storybook.json \
         --region $REGION)
     
     # Extract execution ID
@@ -815,23 +815,23 @@ EOF
         --region $REGION)
     
     # Extract outputs
-    echo $RESULT | jq -r '.outputs.polishedManuscript' > polished_manuscript.txt
+    echo $RESULT | jq -r '.outputs.polishedStorybook' > polished_Storybook.txt
     
-    echo -e "${GREEN}Test completed. Polished manuscript saved to polished_manuscript.txt${NC}"
+    echo -e "${GREEN}Test completed. Polished Storybook saved to polished_Storybook.txt${NC}"
     
     # Clean up
-    rm -f test_manuscript.json
+    rm -f test_Storybook.json
 }
 
 # Main menu function
 main_menu() {
     while true; do
         echo -e "\n${BLUE}=== AWS Bedrock Flow Hierarchical Multi-Agent Deployment ====${NC}"
-        echo -e "1. Create manuscript processing flow"
+        echo -e "1. Create Storybook processing flow"
         echo -e "2. Modify existing flow"
         echo -e "3. Delete all resources"
         echo -e "4. Show information about deployed resources"
-        echo -e "5. Test flow with sample manuscript"
+        echo -e "5. Test flow with sample Storybook"
         echo -e "6. Exit"
         
         read -p "Choose an option: " option
@@ -865,5 +865,5 @@ main_menu() {
 
 # Script start
 echo -e "${BLUE}AWS Bedrock Flow Hierarchical Multi-Agent Deployment Script${NC}"
-echo -e "${BLUE}This script will help you deploy a complex multi-agent workflow for manuscript processing${NC}"
+echo -e "${BLUE}This script will help you deploy a complex multi-agent workflow for Storybook processing${NC}"
 main_menu
