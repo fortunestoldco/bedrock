@@ -17,43 +17,43 @@ NC='\033[0m' # No Color
 REGION="us-east-1" # Default region - modify if needed
 STACK_NAME="ManuscriptProcessingFlow"
 MODEL_ID="anthropic.claude-3-sonnet-20240229-v1:0" # Default model
-FLOW_BUCKET_NAME="manuscript-flow-resources-\$(date +%s)"
+FLOW_BUCKET_NAME="manuscript-flow-resources-$(date +%s)"
 ROLE_NAME="BedrockFlowManuscriptRole"
-ACCOUNT_ID=\$(aws sts get-caller-identity --query Account --output text)
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 # Agent IDs - will be populated during creation
 declare -A AGENT_IDS
 
 # Check dependencies
 check_dependencies() {
-    echo -e "\${BLUE}Checking dependencies...\${NC}"
+    echo -e "${BLUE}Checking dependencies...${NC}"
     
     if ! command -v aws &> /dev/null; then
-        echo -e "\${RED}AWS CLI is not installed. Please install it and try again.\${NC}"
+        echo -e "${RED}AWS CLI is not installed. Please install it and try again.${NC}"
         exit 1
     fi
     
-    AWS_VERSION=\$(aws --version | cut -d' ' -f1 | cut -d'/' -f2)
-    if [[ \$(echo "\$AWS_VERSION 2.24" | awk '{if (\$1 < \$2) print "false"; else print "true"}') == "false" ]]; then
-        echo -e "\${RED}AWS CLI version is \$AWS_VERSION, but 2.24 or higher is required.\${NC}"
+    AWS_VERSION=$(aws --version | cut -d' ' -f1 | cut -d'/' -f2)
+    if [[ $(echo "$AWS_VERSION 2.24" | awk '{if ($1 < $2) print "false"; else print "true"}') == "false" ]]; then
+        echo -e "${RED}AWS CLI version is $AWS_VERSION, but 2.24 or higher is required.${NC}"
         exit 1
     fi
     
     if ! command -v jq &> /dev/null; then
-        echo -e "\${RED}jq is not installed. Please install it and try again.\${NC}"
+        echo -e "${RED}jq is not installed. Please install it and try again.${NC}"
         exit 1
     fi
     
-    echo -e "\${GREEN}All dependencies found.\${NC}"
+    echo -e "${GREEN}All dependencies found.${NC}"
 }
 
 # Create IAM role for Bedrock Flow
 create_iam_role() {
-    echo -e "\${BLUE}Creating IAM role for Bedrock Flow...\${NC}"
+    echo -e "${BLUE}Creating IAM role for Bedrock Flow...${NC}"
     
     # Check if role already exists
-    if aws iam get-role --role-name \$ROLE_NAME &>/dev/null; then
-        echo -e "\${YELLOW}Role \$ROLE_NAME already exists, skipping creation.\${NC}"
+    if aws iam get-role --role-name $ROLE_NAME &>/dev/null; then
+        echo -e "${YELLOW}Role $ROLE_NAME already exists, skipping creation.${NC}"
         return 0
     fi
     
@@ -97,8 +97,8 @@ EOF
                 "s3:ListBucket"
             ],
             "Resource": [
-                "arn:aws:s3:::\${FLOW_BUCKET_NAME}",
-                "arn:aws:s3:::\${FLOW_BUCKET_NAME}/*"
+                "arn:aws:s3:::${FLOW_BUCKET_NAME}",
+                "arn:aws:s3:::${FLOW_BUCKET_NAME}/*"
             ]
         }
     ]
@@ -107,7 +107,7 @@ EOF
 
     # Create the role
     aws iam create-role \
-        --role-name \$ROLE_NAME \
+        --role-name $ROLE_NAME \
         --assume-role-policy-document file://trust-policy.json
 
     # Create and attach policy
@@ -116,14 +116,14 @@ EOF
         --policy-document file://bedrock-policy.json
 
     aws iam attach-role-policy \
-        --role-name \$ROLE_NAME \
-        --policy-arn arn:aws:iam::\${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy
+        --role-name $ROLE_NAME \
+        --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy
     
     # Wait for role to propagate
-    echo -e "\${YELLOW}Waiting 10 seconds for role to propagate...\${NC}"
+    echo -e "${YELLOW}Waiting 10 seconds for role to propagate...${NC}"
     sleep 10
     
-    echo -e "\${GREEN}IAM role created successfully.\${NC}"
+    echo -e "${GREEN}IAM role created successfully.${NC}"
     
     # Clean up
     rm -f trust-policy.json bedrock-policy.json
@@ -131,21 +131,21 @@ EOF
 
 # Create S3 bucket for storing resources
 create_s3_bucket() {
-    echo -e "\${BLUE}Creating S3 bucket for flow resources...\${NC}"
+    echo -e "${BLUE}Creating S3 bucket for flow resources...${NC}"
     
-    aws s3 mb s3://\${FLOW_BUCKET_NAME} --region \$REGION
+    aws s3 mb s3://${FLOW_BUCKET_NAME} --region $REGION
     
     # Enable versioning for backup
     aws s3api put-bucket-versioning \
-        --bucket \${FLOW_BUCKET_NAME} \
+        --bucket ${FLOW_BUCKET_NAME} \
         --versioning-configuration Status=Enabled
         
-    echo -e "\${GREEN}S3 bucket created successfully.\${NC}"
+    echo -e "${GREEN}S3 bucket created successfully.${NC}"
 }
 
 # Upload agent prompts to S3
 upload_prompts() {
-    echo -e "\${BLUE}Creating and uploading agent prompts to S3...\${NC}"
+    echo -e "${BLUE}Creating and uploading agent prompts to S3...${NC}"
     
     mkdir -p prompts
     
@@ -227,10 +227,10 @@ EOF
     # Create prompts for remaining agents (abbreviated for length)
     # In a full implementation, each agent would have a unique prompt
     for agent in "human_feedback_manager" "quality_assessment_director" "project_timeline_manager" "market_alignment_director" "structure_architect" "plot_development_specialist" "world_building_expert" "character_psychology_specialist" "character_voice_designer" "character_relationship_mapper" "domain_knowledge_specialist" "cultural_authenticity_expert" "content_development_director" "chapter_drafters" "scene_construction_specialists" "dialogue_crafters" "continuity_manager" "voice_consistency_monitor" "emotional_arc_designer" "editorial_director" "structural_editor" "character_arc_evaluator" "thematic_coherence_analyst" "prose_enhancement_specialist" "dialogue_refinement_expert" "rhythm_cadence_optimizer" "grammar_consistency_checker" "fact_verification_specialist" "positioning_specialist" "title_blurb_optimizer" "differentiation_strategist" "formatting_standards_expert"; do
-        cat > prompts/\${agent}.md << EOF
-# \${agent^} Agent Prompt
+        cat > prompts/${agent}.md << EOF
+# ${agent^} Agent Prompt
 
-You are the \${agent^} in a manuscript processing system. Your specialized role focuses on specific aspects of manuscript enhancement.
+You are the ${agent^} in a manuscript processing system. Your specialized role focuses on specific aspects of manuscript enhancement.
 
 ## INSTRUCTIONS:
 1. Review the manuscript section with focus on your specialty
@@ -283,9 +283,9 @@ Ensure transitions between chunks maintain coherence and preserve the narrative 
 EOF
 
     # Upload all prompts to S3
-    aws s3 sync prompts/ s3://\${FLOW_BUCKET_NAME}/prompts/ --region \$REGION
+    aws s3 sync prompts/ s3://${FLOW_BUCKET_NAME}/prompts/ --region $REGION
     
-    echo -e "\${GREEN}Agent prompts uploaded successfully.\${NC}"
+    echo -e "${GREEN}Agent prompts uploaded successfully.${NC}"
     
     # Clean up
     rm -rf prompts
@@ -293,57 +293,57 @@ EOF
 
 # Create agent function to reduce repetition
 create_agent() {
-    local agent_name=\$1
-    local agent_desc=\$2
-    local prompt_s3_path=\$3
+    local agent_name=$1
+    local agent_desc=$2
+    local prompt_s3_path=$3
     
-    echo -e "\${BLUE}Creating agent: \$agent_name...\${NC}"
+    echo -e "${BLUE}Creating agent: $agent_name...${NC}"
     
     # Create agent with Claude 3 Sonnet
-    RESPONSE=\$(aws bedrock-agent create-agent \
-        --agent-name "\$agent_name" \
-        --agent-resource-role-arn "arn:aws:iam::\${ACCOUNT_ID}:role/\${ROLE_NAME}" \
-        --instruction-configuration "s3={bucketName=\${FLOW_BUCKET_NAME},objectKey=\${prompt_s3_path}}" \
-        --foundation-model "\$MODEL_ID" \
-        --description "\$agent_desc" \
+    RESPONSE=$(aws bedrock-agent create-agent \
+        --agent-name "$agent_name" \
+        --agent-resource-role-arn "arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}" \
+        --instruction-configuration "s3={bucketName=${FLOW_BUCKET_NAME},objectKey=${prompt_s3_path}}" \
+        --foundation-model "$MODEL_ID" \
+        --description "$agent_desc" \
         --idle-session-timeout-in-seconds 1800 \
-        --region \$REGION)
+        --region $REGION)
     
     # Extract agent ID
-    AGENT_ID=\$(echo \$RESPONSE | jq -r '.agent.agentId')
-    AGENT_IDS["\$agent_name"]=\$AGENT_ID
+    AGENT_ID=$(echo $RESPONSE | jq -r '.agent.agentId')
+    AGENT_IDS["$agent_name"]=$AGENT_ID
     
-    echo -e "\${GREEN}Created agent: \$agent_name with ID: \$AGENT_ID\${NC}"
+    echo -e "${GREEN}Created agent: $agent_name with ID: $AGENT_ID${NC}"
     
     # Wait for agent creation
-    echo -e "\${YELLOW}Waiting for agent to be ready...\${NC}"
+    echo -e "${YELLOW}Waiting for agent to be ready...${NC}"
     aws bedrock-agent wait agent-available \
-        --agent-id \$AGENT_ID \
-        --region \$REGION
+        --agent-id $AGENT_ID \
+        --region $REGION
     
     # Create agent alias
-    ALIAS_RESPONSE=\$(aws bedrock-agent create-agent-alias \
-        --agent-id \$AGENT_ID \
+    ALIAS_RESPONSE=$(aws bedrock-agent create-agent-alias \
+        --agent-id $AGENT_ID \
         --agent-alias-name "Production" \
         --routing-configuration "provisionedThroughput={standardThroughput=1}" \
-        --region \$REGION)
+        --region $REGION)
     
     # Extract alias ID
-    ALIAS_ID=\$(echo \$ALIAS_RESPONSE | jq -r '.agentAlias.agentAliasId')
+    ALIAS_ID=$(echo $ALIAS_RESPONSE | jq -r '.agentAlias.agentAliasId')
     
-    echo -e "\${GREEN}Created alias for \$agent_name\${NC}"
+    echo -e "${GREEN}Created alias for $agent_name${NC}"
     
     # Prepare agent for use
     aws bedrock-agent prepare-agent \
-        --agent-id \$AGENT_ID \
-        --region \$REGION
+        --agent-id $AGENT_ID \
+        --region $REGION
         
-    echo -e "\${GREEN}Agent \$agent_name is ready\${NC}"
+    echo -e "${GREEN}Agent $agent_name is ready${NC}"
 }
 
 # Create all agents in the system
 create_agents() {
-    echo -e "\${BLUE}Creating all agents for manuscript processing workflow...\${NC}"
+    echo -e "${BLUE}Creating all agents for manuscript processing workflow...${NC}"
     
     # Create Executive Tier Agents
     create_agent "ExecutiveDirector" "System orchestrator and final decision-maker" "prompts/executive_director.md"
@@ -392,7 +392,7 @@ create_agents() {
     # Create utility agent for text splitting
     create_agent "TextSplitter" "Utility for splitting large manuscripts" "prompts/text_splitter.md"
     
-    echo -e "\${GREEN}All agents created successfully.\${NC}"
+    echo -e "${GREEN}All agents created successfully.${NC}"
     
     # Save agent IDs to file for later use
     echo "Saving agent IDs to file for reference..."
@@ -401,7 +401,7 @@ create_agents() {
 
 # Create the Bedrock Flow
 create_flow() {
-    echo -e "\${BLUE}Creating Bedrock Flow for manuscript processing...\${NC}"
+    echo -e "${BLUE}Creating Bedrock Flow for manuscript processing...${NC}"
     
     # Create flow definition file
     cat > flow_definition.json << EOF
@@ -419,13 +419,13 @@ create_flow() {
         "source": null,
         "inputs": {
           "flowInputs": {
-            "title": "\\${title}",
-            "manuscript": "\\${manuscript}"
+            "title": "\${title}",
+            "manuscript": "\${manuscript}"
           }
         },
         "outputs": {
-          "title": "\\${title}",
-          "manuscript": "\\${manuscript}"
+          "title": "\${title}",
+          "manuscript": "\${manuscript}"
         }
       },
       {
@@ -434,10 +434,10 @@ create_flow() {
         "source": "InputNode",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["TextSplitter"]}:Production",
-          "inputText": "I need to split this manuscript for processing. Here are the details:\\nTitle: \\${title}\\n\\nManuscript:\\n\\${manuscript}"
+          "inputText": "I need to split this manuscript for processing. Here are the details:\nTitle: \${title}\n\nManuscript:\n\${manuscript}"
         },
         "outputs": {
-          "chunks": "\\${agentResponse}"
+          "chunks": "\${agentResponse}"
         }
       },
       {
@@ -446,10 +446,10 @@ create_flow() {
         "source": "TextSplitterNode",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["ExecutiveDirector"]}:Production",
-          "inputText": "Please review this manuscript and provide an initial assessment:\\nTitle: \\${title}\\n\\nManuscript chunks:\\n\\${chunks}"
+          "inputText": "Please review this manuscript and provide an initial assessment:\nTitle: \${title}\n\nManuscript chunks:\n\${chunks}"
         },
         "outputs": {
-          "executiveAssessment": "\\${agentResponse}"
+          "executiveAssessment": "\${agentResponse}"
         }
       },
       {
@@ -458,10 +458,10 @@ create_flow() {
         "source": "ExecutiveAssessment",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["CreativeDirector"]}:Production",
-          "inputText": "Based on the executive assessment, please establish the creative vision for this manuscript:\\n\\nTitle: \\${title}\\n\\nExecutive Assessment: \\${executiveAssessment}\\n\\nManuscript chunks: \\${chunks}"
+          "inputText": "Based on the executive assessment, please establish the creative vision for this manuscript:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nManuscript chunks: \${chunks}"
         },
         "outputs": {
-          "creativeVision": "\\${agentResponse}"
+          "creativeVision": "\${agentResponse}"
         }
       },
       {
@@ -470,10 +470,10 @@ create_flow() {
         "source": "CreativeVision",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["MarketAlignmentDirector"]}:Production",
-          "inputText": "Please analyze the market positioning for this manuscript:\\n\\nTitle: \\${title}\\n\\nExecutive Assessment: \\${executiveAssessment}\\n\\nCreative Vision: \\${creativeVision}"
+          "inputText": "Please analyze the market positioning for this manuscript:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nCreative Vision: \${creativeVision}"
         },
         "outputs": {
-          "marketAnalysis": "\\${agentResponse}"
+          "marketAnalysis": "\${agentResponse}"
         }
       },
       {
@@ -482,10 +482,10 @@ create_flow() {
         "source": "MarketAnalysis",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["StructureArchitect"]}:Production",
-          "inputText": "Please analyze the structural elements of this manuscript:\\n\\nTitle: \\${title}\\n\\nExecutive Assessment: \\${executiveAssessment}\\n\\nCreative Vision: \\${creativeVision}\\n\\nMarket Analysis: \\${marketAnalysis}\\n\\nManuscript chunks: \\${chunks}"
+          "inputText": "Please analyze the structural elements of this manuscript:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}\n\nManuscript chunks: \${chunks}"
         },
         "outputs": {
-          "structuralAssessment": "\\${agentResponse}"
+          "structuralAssessment": "\${agentResponse}"
         }
       },
       {
@@ -494,10 +494,10 @@ create_flow() {
         "source": "StructuralAssessment",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["CharacterPsychologySpecialist"]}:Production",
-          "inputText": "Please analyze the character elements of this manuscript:\\n\\nTitle: \\${title}\\n\\nStructural Assessment: \\${structuralAssessment}\\n\\nCreative Vision: \\${creativeVision}\\n\\nManuscript chunks: \\${chunks}"
+          "inputText": "Please analyze the character elements of this manuscript:\n\nTitle: \${title}\n\nStructural Assessment: \${structuralAssessment}\n\nCreative Vision: \${creativeVision}\n\nManuscript chunks: \${chunks}"
         },
         "outputs": {
-          "characterAssessment": "\\${agentResponse}"
+          "characterAssessment": "\${agentResponse}"
         }
       },
       {
@@ -506,10 +506,10 @@ create_flow() {
         "source": "CharacterAssessment",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["ContentDevelopmentDirector"]}:Production",
-          "inputText": "Please develop a content refinement plan for this manuscript:\\n\\nTitle: \\${title}\\n\\nExecutive Assessment: \\${executiveAssessment}\\n\\nStructural Assessment: \\${structuralAssessment}\\n\\nCharacter Assessment: \\${characterAssessment}\\n\\nCreative Vision: \\${creativeVision}\\n\\nMarket Analysis: \\${marketAnalysis}"
+          "inputText": "Please develop a content refinement plan for this manuscript:\n\nTitle: \${title}\n\nExecutive Assessment: \${executiveAssessment}\n\nStructural Assessment: \${structuralAssessment}\n\nCharacter Assessment: \${characterAssessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}"
         },
         "outputs": {
-          "contentPlan": "\\${agentResponse}"
+          "contentPlan": "\${agentResponse}"
         }
       },
       {
@@ -518,10 +518,10 @@ create_flow() {
         "source": "ContentRefinementPlan",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["EditorialDirector"]}:Production",
-          "inputText": "Please establish editorial direction for this manuscript:\\n\\nTitle: \\${title}\\n\\nContent Plan: \\${contentPlan}\\n\\nCreative Vision: \\${creativeVision}\\n\\nStructural Assessment: \\${structuralAssessment}\\n\\nCharacter Assessment: \\${characterAssessment}"
+          "inputText": "Please establish editorial direction for this manuscript:\n\nTitle: \${title}\n\nContent Plan: \${contentPlan}\n\nCreative Vision: \${creativeVision}\n\nStructural Assessment: \${structuralAssessment}\n\nCharacter Assessment: \${characterAssessment}"
         },
         "outputs": {
-          "editorialDirection": "\\${agentResponse}"
+          "editorialDirection": "\${agentResponse}"
         }
       },
       {
@@ -530,10 +530,10 @@ create_flow() {
         "source": "EditorialDirection",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["ProseEnhancementSpecialist"]}:Production",
-          "inputText": "Please enhance the prose of this manuscript based on the editorial direction:\\n\\nTitle: \\${title}\\n\\nEditorial Direction: \\${editorialDirection}\\n\\nCreative Vision: \\${creativeVision}\\n\\nManuscript chunks: \\${chunks}"
+          "inputText": "Please enhance the prose of this manuscript based on the editorial direction:\n\nTitle: \${title}\n\nEditorial Direction: \${editorialDirection}\n\nCreative Vision: \${creativeVision}\n\nManuscript chunks: \${chunks}"
         },
         "outputs": {
-          "enhancedProse": "\\${agentResponse}"
+          "enhancedProse": "\${agentResponse}"
         }
       },
       {
@@ -542,10 +542,10 @@ create_flow() {
         "source": "ProseRefinement",
         "inputs": {
           "agentAliasId": "\${AGENT_IDS["ExecutiveDirector"]}:Production",
-          "inputText": "Please review and finalize the manuscript with all enhancements:\\n\\nTitle: \\${title}\\n\\nEnhanced Prose: \\${enhancedProse}\\n\\nEditorial Direction: \\${editorialDirection}\\n\\nContent Plan: \\${contentPlan}\\n\\nStructural Assessment: \\${structuralAssessment}\\n\\nCharacter Assessment: \\${characterAssessment}\\n\\nCreative Vision: \\${creativeVision}\\n\\nMarket Analysis: \\${marketAnalysis}"
+          "inputText": "Please review and finalize the manuscript with all enhancements:\n\nTitle: \${title}\n\nEnhanced Prose: \${enhancedProse}\n\nEditorial Direction: \${editorialDirection}\n\nContent Plan: \${contentPlan}\n\nStructural Assessment: \${structuralAssessment}\n\nCharacter Assessment: \${characterAssessment}\n\nCreative Vision: \${creativeVision}\n\nMarket Analysis: \${marketAnalysis}"
         },
         "outputs": {
-          "finalManuscript": "\\${agentResponse}"
+          "finalManuscript": "\${agentResponse}"
         }
       },
       {
@@ -554,11 +554,11 @@ create_flow() {
         "source": "FinalRevision",
         "inputs": {
           "flowOutputs": {
-            "originalTitle": "\\${title}",
-            "polishedManuscript": "\\${finalManuscript}",
-            "executiveSummary": "\\${executiveAssessment}",
-            "creativeVision": "\\${creativeVision}",
-            "marketAnalysis": "\\${marketAnalysis}"
+            "originalTitle": "\${title}",
+            "polishedManuscript": "\${finalManuscript}",
+            "executiveSummary": "\${executiveAssessment}",
+            "creativeVision": "\${creativeVision}",
+            "marketAnalysis": "\${marketAnalysis}"
           }
         },
         "outputs": {}
@@ -569,33 +569,33 @@ create_flow() {
 EOF
 
     # Create the flow
-    FLOW_RESPONSE=\$(aws bedrock create-flow \
+    FLOW_RESPONSE=$(aws bedrock create-flow \
         --name "ManuscriptProcessingFlow" \
         --definition file://flow_definition.json \
-        --execution-role-arn "arn:aws:iam::\${ACCOUNT_ID}:role/\${ROLE_NAME}" \
-        --region \$REGION)
+        --execution-role-arn "arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}" \
+        --region $REGION)
     
     # Extract flow ID
-    FLOW_ID=\$(echo \$FLOW_RESPONSE | jq -r '.id')
+    FLOW_ID=$(echo $FLOW_RESPONSE | jq -r '.id')
     
-    echo -e "\${GREEN}Created flow with ID: \$FLOW_ID\${NC}"
+    echo -e "${GREEN}Created flow with ID: $FLOW_ID${NC}"
     
     # Create flow alias
-    FLOW_ALIAS_RESPONSE=\$(aws bedrock create-flow-alias \
-        --flow-id \$FLOW_ID \
+    FLOW_ALIAS_RESPONSE=$(aws bedrock create-flow-alias \
+        --flow-id $FLOW_ID \
         --name "Production" \
-        --region \$REGION)
+        --region $REGION)
     
     # Extract flow alias ID
-    FLOW_ALIAS_ID=\$(echo \$FLOW_ALIAS_RESPONSE | jq -r '.id')
+    FLOW_ALIAS_ID=$(echo $FLOW_ALIAS_RESPONSE | jq -r '.id')
     
-    echo -e "\${GREEN}Created flow alias with ID: \$FLOW_ALIAS_ID\${NC}"
+    echo -e "${GREEN}Created flow alias with ID: $FLOW_ALIAS_ID${NC}"
     
     # Save flow information to file
-    echo "FLOW_ID=\$FLOW_ID" > flow_info.txt
-    echo "FLOW_ALIAS_ID=\$FLOW_ALIAS_ID" >> flow_info.txt
+    echo "FLOW_ID=$FLOW_ID" > flow_info.txt
+    echo "FLOW_ALIAS_ID=$FLOW_ALIAS_ID" >> flow_info.txt
     
-    echo -e "\${GREEN}Flow created and configured successfully.\${NC}"
+    echo -e "${GREEN}Flow created and configured successfully.${NC}"
     
     # Clean up
     rm -f flow_definition.json
@@ -610,53 +610,53 @@ create_resources() {
     create_agents
     create_flow
     
-    echo -e "\${GREEN}All resources created successfully.\${NC}"
-    echo -e "\${BLUE}Your manuscript processing flow is ready to use.\${NC}"
-    echo -e "\${BLUE}Flow ID: \$FLOW_ID\${NC}"
-    echo -e "\${BLUE}Flow Alias: Production (ID: \$FLOW_ALIAS_ID)\${NC}"
-    echo -e "\${BLUE}S3 Bucket: \$FLOW_BUCKET_NAME\${NC}"
+    echo -e "${GREEN}All resources created successfully.${NC}"
+    echo -e "${BLUE}Your manuscript processing flow is ready to use.${NC}"
+    echo -e "${BLUE}Flow ID: $FLOW_ID${NC}"
+    echo -e "${BLUE}Flow Alias: Production (ID: $FLOW_ALIAS_ID)${NC}"
+    echo -e "${BLUE}S3 Bucket: $FLOW_BUCKET_NAME${NC}"
 }
 
 # Function to modify resources
 modify_resources() {
-    echo -e "\${YELLOW}Modifying existing resources is not fully implemented.\${NC}"
-    echo -e "\${YELLOW}For significant changes, it's recommended to delete and recreate the flow.\${NC}"
+    echo -e "${YELLOW}Modifying existing resources is not fully implemented.${NC}"
+    echo -e "${YELLOW}For significant changes, it's recommended to delete and recreate the flow.${NC}"
     
     # Here you would include logic to modify specific aspects of the flow
     # This would require loading existing IDs from saved files
     
-    echo -e "\${BLUE}Options for modification:\${NC}"
+    echo -e "${BLUE}Options for modification:${NC}"
     echo -e "1. Update agent prompts"
     echo -e "2. Modify flow definition"
     echo -e "3. Return to main menu"
     
     read -p "Choose an option: " modify_option
     
-    case \$modify_option in
+    case $modify_option in
         1)
-            echo -e "\${BLUE}Updating agent prompts...\${NC}"
+            echo -e "${BLUE}Updating agent prompts...${NC}"
             # Logic to update prompts would go here
             ;;
         2)
-            echo -e "\${BLUE}Modifying flow definition...\${NC}"
+            echo -e "${BLUE}Modifying flow definition...${NC}"
             # Logic to modify flow would go here
             ;;
         3)
             return
             ;;
         *)
-            echo -e "\${RED}Invalid option\${NC}"
+            echo -e "${RED}Invalid option${NC}"
             ;;
     esac
 }
 
 # Function to delete all resources
 delete_resources() {
-    echo -e "\${RED}WARNING: This will delete all resources created for the manuscript processing flow.\${NC}"
+    echo -e "${RED}WARNING: This will delete all resources created for the manuscript processing flow.${NC}"
     read -p "Are you sure you want to proceed? (y/n): " confirm
     
-    if [[ \$confirm != "y" && \$confirm != "Y" ]]; then
-        echo -e "\${BLUE}Deletion cancelled.\${NC}"
+    if [[ $confirm != "y" && $confirm != "Y" ]]; then
+        echo -e "${BLUE}Deletion cancelled.${NC}"
         return
     fi
     
@@ -672,106 +672,106 @@ delete_resources() {
         source agent_ids.txt
     fi
     
-    echo -e "\${BLUE}Deleting flow...\${NC}"
+    echo -e "${BLUE}Deleting flow...${NC}"
     # Delete flow alias first
-    if [ ! -z "\$FLOW_ALIAS_ID" ] && [ ! -z "\$FLOW_ID" ]; then
+    if [ ! -z "$FLOW_ALIAS_ID" ] && [ ! -z "$FLOW_ID" ]; then
         aws bedrock delete-flow-alias \
-            --flow-id \$FLOW_ID \
-            --flow-alias-id \$FLOW_ALIAS_ID \
-            --region \$REGION || true
+            --flow-id $FLOW_ID \
+            --flow-alias-id $FLOW_ALIAS_ID \
+            --region $REGION || true
         
         # Delete flow
         aws bedrock delete-flow \
-            --flow-id \$FLOW_ID \
-            --region \$REGION || true
+            --flow-id $FLOW_ID \
+            --region $REGION || true
     fi
     
-    echo -e "\${BLUE}Deleting agents...\${NC}"
+    echo -e "${BLUE}Deleting agents...${NC}"
     # Delete all agents if agent_ids.txt exists
     if [ -v AGENT_IDS ]; then
-        for agent_name in "\${!AGENT_IDS[@]}"; do
-            agent_id=\${AGENT_IDS[\$agent_name]}
-            echo -e "Deleting agent: \$agent_name (\$agent_id)"
+        for agent_name in "${!AGENT_IDS[@]}"; do
+            agent_id=${AGENT_IDS[$agent_name]}
+            echo -e "Deleting agent: $agent_name ($agent_id)"
             
             # Delete agent alias
             aws bedrock-agent delete-agent-alias \
-                --agent-id \$agent_id \
+                --agent-id $agent_id \
                 --agent-alias-id Production \
-                --region \$REGION || true
+                --region $REGION || true
             
             # Delete agent
             aws bedrock-agent delete-agent \
-                --agent-id \$agent_id \
+                --agent-id $agent_id \
                 --skip-resource-in-use-check \
-                --region \$REGION || true
+                --region $REGION || true
         done
     fi
     
-    echo -e "\${BLUE}Deleting S3 bucket...\${NC}"
+    echo -e "${BLUE}Deleting S3 bucket...${NC}"
     # Delete S3 bucket
-    if [ ! -z "\$FLOW_BUCKET_NAME" ]; then
-        aws s3 rm s3://\${FLOW_BUCKET_NAME} --recursive --region \$REGION
-        aws s3 rb s3://\${FLOW_BUCKET_NAME} --force --region \$REGION
+    if [ ! -z "$FLOW_BUCKET_NAME" ]; then
+        aws s3 rm s3://${FLOW_BUCKET_NAME} --recursive --region $REGION
+        aws s3 rb s3://${FLOW_BUCKET_NAME} --force --region $REGION
     fi
     
-    echo -e "\${BLUE}Deleting IAM role...\${NC}"
+    echo -e "${BLUE}Deleting IAM role...${NC}"
     # Delete IAM role
-    if [ ! -z "\$ROLE_NAME" ]; then
+    if [ ! -z "$ROLE_NAME" ]; then
         aws iam detach-role-policy \
-            --role-name \$ROLE_NAME \
-            --policy-arn arn:aws:iam::\${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy || true
+            --role-name $ROLE_NAME \
+            --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy || true
         
         aws iam delete-policy \
-            --policy-arn arn:aws:iam::\${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy || true
+            --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/BedrockFlowManuscriptPolicy || true
         
         aws iam delete-role \
-            --role-name \$ROLE_NAME || true
+            --role-name $ROLE_NAME || true
     fi
     
     # Remove info files
     rm -f flow_info.txt agent_ids.txt
     
-    echo -e "\${GREEN}All resources deleted successfully.\${NC}"
+    echo -e "${GREEN}All resources deleted successfully.${NC}"
 }
 
 # Function to display information about a deployed flow
 show_info() {
-    echo -e "\${BLUE}Retrieving information about deployed resources...\${NC}"
+    echo -e "${BLUE}Retrieving information about deployed resources...${NC}"
     
     if [ -f flow_info.txt ]; then
         source flow_info.txt
-        echo -e "\${GREEN}Flow Information:\${NC}"
-        echo -e "Flow ID: \$FLOW_ID"
-        echo -e "Flow Alias ID: \$FLOW_ALIAS_ID"
+        echo -e "${GREEN}Flow Information:${NC}"
+        echo -e "Flow ID: $FLOW_ID"
+        echo -e "Flow Alias ID: $FLOW_ALIAS_ID"
         
         # Get flow details
         aws bedrock get-flow \
-            --flow-id \$FLOW_ID \
-            --region \$REGION | jq '.name, .description, .status'
+            --flow-id $FLOW_ID \
+            --region $REGION | jq '.name, .description, .status'
     else
-        echo -e "\${YELLOW}Flow information not found. Has a flow been deployed?\${NC}"
+        echo -e "${YELLOW}Flow information not found. Has a flow been deployed?${NC}"
     fi
     
     if [ -f agent_ids.txt ]; then
         source agent_ids.txt
-        echo -e "\${GREEN}Agent Information:\${NC}"
-        for agent_name in "\${!AGENT_IDS[@]}"; do
-            agent_id=\${AGENT_IDS[\$agent_name]}
-            echo -e "\$agent_name: \$agent_id"
+        echo -e "${GREEN}Agent Information:${NC}"
+        for agent_name in "${!AGENT_IDS[@]}"; do
+            agent_id=${AGENT_IDS[$agent_name]}
+            echo -e "$agent_name: $agent_id"
         done
     else
-        echo -e "\${YELLOW}Agent information not found. Have agents been deployed?\${NC}"
+        echo -e "${YELLOW}Agent information not found. Have agents been deployed?${NC}"
     fi
     
-    echo -e "\${GREEN}S3 Bucket: \$FLOW_BUCKET_NAME\${NC}"
+    echo -e "${GREEN}S3 Bucket: $FLOW_BUCKET_NAME${NC}"
 }
 
 # Function to test the flow with a sample manuscript
 test_flow() {
-    echo -e "\${BLUE}Testing the manuscript processing flow...\${NC}"
+    echo -e "${BLUE}Testing the manuscript processing flow...${NC}"
     
     if [ ! -f flow_info.txt ]; then
-        echo -e "\${RED}Flow information not found. Please deploy the flow first.\${NC}"
+        echo -e "${RED}Flow information not found. Please deploy the flow first.${NC}"
         return
     fi
     
@@ -785,39 +785,39 @@ test_flow() {
 }
 EOF
 
-    echo -e "\${BLUE}Invoking flow with test manuscript...\${NC}"
+    echo -e "${BLUE}Invoking flow with test manuscript...${NC}"
     
     # Invoke the flow
-    INVOKE_RESPONSE=\$(aws bedrock invoke-flow \
-        --flow-id \$FLOW_ID \
+    INVOKE_RESPONSE=$(aws bedrock invoke-flow \
+        --flow-id $FLOW_ID \
         --flow-alias "Production" \
         --inputs file://test_manuscript.json \
-        --region \$REGION)
+        --region $REGION)
     
     # Extract execution ID
-    EXECUTION_ID=\$(echo \$INVOKE_RESPONSE | jq -r '.executionId')
+    EXECUTION_ID=$(echo $INVOKE_RESPONSE | jq -r '.executionId')
     
-    echo -e "\${GREEN}Flow execution started with ID: \$EXECUTION_ID\${NC}"
-    echo -e "\${YELLOW}This may take several minutes to complete...\${NC}"
+    echo -e "${GREEN}Flow execution started with ID: $EXECUTION_ID${NC}"
+    echo -e "${YELLOW}This may take several minutes to complete...${NC}"
     
     # Wait for flow to complete
     aws bedrock wait flow-execution-complete \
-        --flow-id \$FLOW_ID \
-        --execution-id \$EXECUTION_ID \
-        --region \$REGION
+        --flow-id $FLOW_ID \
+        --execution-id $EXECUTION_ID \
+        --region $REGION
     
-    echo -e "\${GREEN}Flow execution completed.\${NC}"
+    echo -e "${GREEN}Flow execution completed.${NC}"
     
     # Get execution results
-    RESULT=\$(aws bedrock get-flow-execution \
-        --flow-id \$FLOW_ID \
-        --execution-id \$EXECUTION_ID \
-        --region \$REGION)
+    RESULT=$(aws bedrock get-flow-execution \
+        --flow-id $FLOW_ID \
+        --execution-id $EXECUTION_ID \
+        --region $REGION)
     
     # Extract outputs
-    echo \$RESULT | jq -r '.outputs.polishedManuscript' > polished_manuscript.txt
+    echo $RESULT | jq -r '.outputs.polishedManuscript' > polished_manuscript.txt
     
-    echo -e "\${GREEN}Test completed. Polished manuscript saved to polished_manuscript.txt\${NC}"
+    echo -e "${GREEN}Test completed. Polished manuscript saved to polished_manuscript.txt${NC}"
     
     # Clean up
     rm -f test_manuscript.json
@@ -826,7 +826,7 @@ EOF
 # Main menu function
 main_menu() {
     while true; do
-        echo -e "\n\${BLUE}=== AWS Bedrock Flow Hierarchical Multi-Agent Deployment ====\${NC}"
+        echo -e "\n${BLUE}=== AWS Bedrock Flow Hierarchical Multi-Agent Deployment ====${NC}"
         echo -e "1. Create manuscript processing flow"
         echo -e "2. Modify existing flow"
         echo -e "3. Delete all resources"
@@ -836,7 +836,7 @@ main_menu() {
         
         read -p "Choose an option: " option
         
-        case \$option in
+        case $option in
             1)
                 create_resources
                 ;;
@@ -853,17 +853,17 @@ main_menu() {
                 test_flow
                 ;;
             6)
-                echo -e "\${GREEN}Exiting. Goodbye!\${NC}"
+                echo -e "${GREEN}Exiting. Goodbye!${NC}"
                 exit 0
                 ;;
             *)
-                echo -e "\${RED}Invalid option. Please try again.\${NC}"
+                echo -e "${RED}Invalid option. Please try again.${NC}"
                 ;;
         esac
     done
 }
 
 # Script start
-echo -e "\${BLUE}AWS Bedrock Flow Hierarchical Multi-Agent Deployment Script\${NC}"
-echo -e "\${BLUE}This script will help you deploy a complex multi-agent workflow for manuscript processing\${NC}"
+echo -e "${BLUE}AWS Bedrock Flow Hierarchical Multi-Agent Deployment Script${NC}"
+echo -e "${BLUE}This script will help you deploy a complex multi-agent workflow for manuscript processing${NC}"
 main_menu
