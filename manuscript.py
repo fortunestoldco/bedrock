@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Manuscript processing for storybook
-"""
-
 import os
 import re
 import json
