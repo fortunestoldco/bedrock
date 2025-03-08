@@ -8,7 +8,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
 
 # Import modules
-from .config import storybookConfig, configure_logging
+from .config import StorybookConfig, configure_logging
 from .iam import IAMManager
 from .dynamo import DynamoDBManager
 from .flows import FlowManager
@@ -19,12 +19,12 @@ from .research import ResearchManager
 configure_logging()
 logger = logging.getLogger("storybook")
 
-class storybook:
+class Storybook:
     """Main storybook application class."""
     
     def __init__(self):
         """Initialize storybook application."""
-        self.config = storybookConfig()
+        self.config = StorybookConfig()
         self.iam_manager = IAMManager(self.config)
         self.dynamo_manager = DynamoDBManager(self.config)
         self.flow_manager = FlowManager(self.config, self.iam_manager)
@@ -858,5 +858,5 @@ class storybook:
 
 
 if __name__ == "__main__":
-    app = storybook()
+    app = Storybook()
     app.run()

@@ -14,7 +14,7 @@ def configure_logging():
         ]
     )
 
-class storybookConfig:
+class StorybookConfig:
     """Configuration manager for storybook."""
     
     def __init__(self):
@@ -128,7 +128,7 @@ class storybookConfig:
             logging.info(f"Flows list file created at {self.FLOWS_LIST_FILE}")
     
     def _load_config(self) -> None:
-        """Load configuration values."""
+        """Load configuration values.""" 
         with open(self.CONFIG_FILE, 'r') as f:
             config = json.load(f)
             
@@ -170,7 +170,7 @@ class storybookConfig:
         return config.get(section, {})
     
     def update_config(self, key: str, value: Any) -> None:
-        """Update a specific configuration value using dot notation."""
+        """Update a specific configuration value using dot notation.""" 
         with open(self.CONFIG_FILE, 'r') as f:
             config = json.load(f)
         
@@ -194,7 +194,7 @@ class storybookConfig:
         self._load_config()
     
     def update_config_section(self, section: str, data: Dict[str, Any]) -> None:
-        """Update an entire configuration section."""
+        """Update an entire configuration section.""" 
         with open(self.CONFIG_FILE, 'r') as f:
             config = json.load(f)
         
