@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Research management for storybook
-"""
-
 import os
 import re
 import json
