@@ -42,7 +42,7 @@ check_dependencies() {
     if ! command -v jq &> /dev/null; then
         echo -e "\${RED}jq is not installed. Please install it and try again.\${NC}"
         exit 1
-    }
+    fi
     
     echo -e "\${GREEN}All dependencies found.\${NC}"
 }
