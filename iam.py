@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-IAM role management for storybook
-"""
-
 import json
 import logging
 import time
