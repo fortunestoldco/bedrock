@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Configuration management for storybook
-"""
-
 import os
 import json
 import logging
