@@ -8,12 +8,12 @@ from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
 
 # Import modules
-from .config import StorybookConfig, configure_logging
-from .iam import IAMManager
-from .dynamo import DynamoDBManager
-from .flows import FlowManager
-from .manuscript import ManuscriptProcessor
-from .research import ResearchManager
+from config import StorybookConfig, configure_logging
+from iam import IAMManager
+from dynamo import DynamoDBManager
+from flows import FlowManager
+from manuscript import ManuscriptProcessor
+from research import ResearchManager
 
 # Setup logging
 configure_logging()

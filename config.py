@@ -3,8 +3,12 @@ import json
 import logging
 from typing import Dict, Any, Optional, List
 
-def configure_logging():
-    """Configure application logging."""
+def configure_logging() -> None:
+    """
+    Configure application logging.
+
+    Sets up basic logging configuration with both console and file output.
+    """
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -15,10 +19,10 @@ def configure_logging():
     )
 
 class StorybookConfig:
-    """Configuration manager for storybook."""
+    """Configuration manager for storybook application."""
     
-    def __init__(self):
-        """Initialize configuration."""
+    def __init__(self) -> None:
+        """Initialize configuration with default values and paths."""
         # Define paths
         self.CONFIG_FILE = "./config.json"
         self.FLOW_TEMPLATES_DIR = "./flow_templates"
@@ -51,7 +55,11 @@ class StorybookConfig:
         self._load_config()
     
     def _initialize_config(self) -> None:
-        """Initialize configuration file if it doesn't exist."""
+        """
+        Initialize configuration file if it doesn't exist.
+
+        Creates a new configuration file with default settings if not present.
+        """
         if not os.path.isfile(self.CONFIG_FILE):
             logging.info(f"Initializing configuration file: {self.CONFIG_FILE}")
             
@@ -118,7 +126,11 @@ class StorybookConfig:
             logging.info(f"Configuration file created at {self.CONFIG_FILE}")
     
     def _initialize_flows_list(self) -> None:
-        """Initialize flows list file if it doesn't exist."""
+        """
+        Initialize flows list file if it doesn't exist.
+
+        Creates an empty flows list file if not present.
+        """
         if not os.path.isfile(self.FLOWS_LIST_FILE):
             logging.info(f"Creating flows list file: {self.FLOWS_LIST_FILE}")
             
@@ -145,12 +157,26 @@ class StorybookConfig:
         self._config = config
     
     def get_config(self) -> Dict[str, Any]:
-        """Get the full configuration."""
+        """
+        Get the full configuration.
+
+        Returns:
+            Dict[str, Any]: Complete configuration dictionary.
+        """
         with open(self.CONFIG_FILE, 'r') as f:
             return json.load(f)
     
     def get_config_value(self, key: str, default: Any = None) -> Any:
-        """Get a specific configuration value using dot notation."""
+        """
+        Get a specific configuration value using dot notation.
+
+        Args:
+            key: Configuration key using dot notation (e.g., 'aws.region')
+            default: Default value if key not found
+
+        Returns:
+            Any: Configuration value or default if not found.
+        """
         keys = key.split('.')
         value = self._config
         
@@ -163,14 +189,28 @@ class StorybookConfig:
         return value
     
     def get_config_section(self, section: str) -> Dict[str, Any]:
-        """Get a specific configuration section."""
+        """
+        Get a specific configuration section.
+
+        Args:
+            section: Section name to retrieve
+
+        Returns:
+            Dict[str, Any]: Configuration section or empty dict if not found.
+        """
         with open(self.CONFIG_FILE, 'r') as f:
             config = json.load(f)
         
         return config.get(section, {})
     
     def update_config(self, key: str, value: Any) -> None:
-        """Update a specific configuration value using dot notation.""" 
+        """
+        Update a specific configuration value using dot notation.
+
+        Args:
+            key: Configuration key using dot notation (e.g., 'aws.region')
+            value: New value to set
+        """
         with open(self.CONFIG_FILE, 'r') as f:
             config = json.load(f)
         
@@ -194,7 +234,13 @@ class StorybookConfig:
         self._load_config()
     
     def update_config_section(self, section: str, data: Dict[str, Any]) -> None:
-        """Update an entire configuration section.""" 
+        """
+        Update an entire configuration section.
+
+        Args:
+            section: Section name to update
+            data: New section data
+        """
         with open(self.CONFIG_FILE, 'r') as f:
             config = json.load(f)
         

@@ -12,18 +12,34 @@ from typing import Dict, List, Any, Optional, Tuple
 logger = logging.getLogger("storybook.research")
 
 class ResearchManager:
-    """Manages research for storybook."""
+    """Manages research capabilities for the storybook application."""
     
-    def __init__(self, config):
-        """Initialize research manager with configuration."""
+    def __init__(self, config) -> None:
+        """
+        Initialize research manager.
+
+        Args:
+            config: Application configuration object
+        """
         self.config = config
         
         # Generate necessary Python scripts
         self._generate_research_script()
     
     def conduct_research(self, project_name: str, research_topic: str, 
-                       chunk_id: str, chunk_text: str) -> bool:
-        """Conduct research on a topic for a manuscript."""
+                        chunk_id: str, chunk_text: str) -> bool:
+        """
+        Conduct research on a topic for a manuscript.
+
+        Args:
+            project_name: Name of the project
+            research_topic: Topic to research
+            chunk_id: ID of the chunk being researched
+            chunk_text: Text content of the chunk
+
+        Returns:
+            bool: True if research was successful, False otherwise
+        """
         logger.info(f"Conducting research on '{research_topic}' for project {project_name}")
         
         # Create output directory
@@ -169,7 +185,16 @@ class ResearchManager:
             return False
     
     def _search_web(self, query: str, max_results: int = 5) -> Dict[str, Any]:
-        """Perform web search using a search API (DuckDuckGo)."""
+        """
+        Perform web search using a search API (DuckDuckGo).
+
+        Args:
+            query: Search query string
+            max_results: Maximum number of results to return
+
+        Returns:
+            Dict[str, Any]: Search results or error information
+        """
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
@@ -214,7 +239,15 @@ class ResearchManager:
             return {"error": str(e)}
     
     def _extract_content(self, url: str) -> Dict[str, Any]:
-        """Extract main content from a web page."""
+        """
+        Extract main content from a web page.
+
+        Args:
+            url: URL to extract content from
+
+        Returns:
+            Dict[str, Any]: Extracted content or error information
+        """
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
@@ -257,7 +290,16 @@ class ResearchManager:
             return {"error": f"Error extracting content: {str(e)}"}
     
     def _summarize_content(self, content: str, max_length: int = 2000) -> str:
-        """Truncate content to a maximum length while preserving whole sentences."""
+        """
+        Truncate content to a maximum length while preserving whole sentences.
+
+        Args:
+            content: Text content to summarize
+            max_length: Maximum length in characters
+
+        Returns:
+            str: Truncated content ending at a sentence boundary
+        """
         if len(content) <= max_length:
             return content
         
